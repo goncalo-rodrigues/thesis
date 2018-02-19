@@ -8,6 +8,7 @@ class PursuitState(object):
         self.agent_positions = agent_positions
         self.prey_positions = prey_positions
         self.terminal = True
+        self.world_size = world_size
         for prey in prey_positions:
             for pos in neighbors(prey, world_size):
                 if pos not in agent_positions:
@@ -23,7 +24,7 @@ class PursuitState(object):
         filled_positions = set()
 
         ppos_array = [(0,0)] * num_preys
-        apos_array = [(0,0)] * num_preys
+        apos_array = [(0,0)] * num_agents
         for i in range(num_preys):
             while True:
                 pos = (random.randint(0, world_size[0]), random.randint(0, world_size[1]))
@@ -43,3 +44,9 @@ class PursuitState(object):
             filled_positions.add(pos)
 
         return PursuitState(prey_positions=ppos_array, agent_positions=apos_array, world_size=world_size)
+
+    def __repr__(self):
+        s = "Agents:\n" + '\n'.join(str(p) for p in self.agent_positions)
+        s += "\n\n"
+        s += "Prey:\n" + '\n'.join(str(p) for p in self.prey_positions)
+        return s
