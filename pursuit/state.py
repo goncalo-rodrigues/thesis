@@ -1,6 +1,6 @@
 import random
 
-from pursuit.helper import neighbors
+from pursuit.helper import neighbors, cornered
 
 
 class PursuitState(object):
@@ -9,11 +9,20 @@ class PursuitState(object):
         self.prey_positions = prey_positions
         self.terminal = True
         self.world_size = world_size
+        self.occupied = None
         for prey in prey_positions:
-            for pos in neighbors(prey, world_size):
-                if pos not in agent_positions:
-                    self.terminal = False
-                    return
+            if not cornered(self, prey, world_size):
+                self.terminal = False
+                break
+
+
+
+    @property
+    def occupied_cells(self):
+        if not self.occupied:
+            self.occupied = set(self.agent_positions) | set(self.prey_positions)
+        return self.occupied
+
 
     @staticmethod
     def random_state(num_agents, world_size):

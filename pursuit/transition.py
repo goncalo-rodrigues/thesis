@@ -8,14 +8,14 @@ def get_transition_function(num_agents, world_size):
 
     def transition(state, actions):
         assert(len(actions) == num_agents)
-        directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+
         occupied_positions = set(state.prey_positions) | set(state.agent_positions)
 
         num_preys = len(state.prey_positions)
 
         apos_array = []
         ppos_array = []
-
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (0, 0)]
         for i in range(num_preys):
             prey_pos = state.prey_positions[i]
             prey_action = random.choice(directions)

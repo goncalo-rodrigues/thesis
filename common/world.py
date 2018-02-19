@@ -18,8 +18,6 @@ class World(object):
 
     def next(self):
         if self.current_state.terminal:
-            for visualizer in self.visualizers:
-                visualizer.end()
             return False
 
         actions = []
@@ -47,12 +45,15 @@ class World(object):
         for visualizer in self.visualizers:
             visualizer.start(self.current_state)
 
-    def run(self, interval=0):
+    def run(self, interval=0, max_iterations=100):
         self.reset()
         i = 0
-        while self.next():
+        while self.next() and i < max_iterations:
             i += 1
             time.sleep(interval)
+
+        for visualizer in self.visualizers:
+            visualizer.end()
 
         return i, self.total_reward
 

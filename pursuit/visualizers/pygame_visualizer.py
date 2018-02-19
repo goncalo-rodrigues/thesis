@@ -22,9 +22,11 @@ class PygameVisualizer(object):
         self.prey_color = prey_colors
         self.state = None
         self.thread = None
+        self.running = False
 
     def start(self, state):
         self.state = state
+        self.running = True
         self.thread = Thread(target=self.draw, args=())
         self.thread.start()
 
@@ -32,10 +34,11 @@ class PygameVisualizer(object):
         self.state = next_state
 
     def end(self):
-        pass
+        self.running = False
+        self.thread.join()
 
     def draw(self):
-        while 1:
+        while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
