@@ -7,7 +7,7 @@ WHITE = (255, 255, 255)
 
 
 class PygameVisualizer(object):
-    def __init__(self, width=320, height=240, agent_colors=(255, 0, 0), prey_colors=(0, 255, 0)):
+    def __init__(self, width=320, height=240, agent_colors=(255, 0, 0), prey_colors=(0, 255, 0), agents=None):
         self.size = self.width, self.height = width, height
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
@@ -20,6 +20,7 @@ class PygameVisualizer(object):
 
         self.agent_color = agent_colors
         self.prey_color = prey_colors
+        self.agents = agents
         self.state = None
         self.thread = None
         self.running = False
@@ -70,6 +71,16 @@ class PygameVisualizer(object):
                 pygame.draw.rect(self.screen, color,
                                  pygame.Rect((x+padding/2)*xstep, (y+padding/2)*ystep,
                                              xstep-padding*xstep, ystep-padding*ystep))
+
+            if self.agents:
+                for i, agent in enumerate(self.agents):
+                    if hasattr(agent, 'last_target') and agent.last_target:
+                        x, y = agent.last_target
+                        color = self.agent_color if len(self.agent_color) == 1 else self.agent_color[i]
+
+                        pygame.draw.rect(self.screen, color,
+                                         pygame.Rect((x + padding / 2) * xstep, (y + padding / 2) * ystep,
+                                                     xstep - padding * xstep, ystep - padding * ystep), 3)
 
 
             pygame.display.flip()

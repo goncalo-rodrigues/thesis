@@ -1,3 +1,6 @@
+
+
+
 def neighbors(pos, world_size):
     directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     result = []
@@ -14,6 +17,17 @@ def distance(pos1, pos2, w, h):
     dx = min((pos1[0] - pos2[0]) % w, (pos2[0] - pos1[0]) % w)
     dy = min((pos1[1] - pos2[1]) % h, (pos2[1] - pos1[1]) % h)
     return dx, dy
+
+
+def manhattan_distance(pos1, pos2, w, h):
+    return sum(distance(pos1, pos2, w, h))
+
+
+def softmax(array, factor=1.0):
+    import numpy as np
+    array = array * factor
+    array = np.exp(array - np.max(array))
+    return array / array.sum()
 
 
 def direction(source, target, w, h):
@@ -60,3 +74,26 @@ def cornered(state, position, world_size):
         if n not in state.occupied_cells:
             return False
     return True
+
+def astar_distance(source, target, occupied_cells, world_size):
+    from pursuit.planning.astar import astar
+    _, d = astar(source, occupied_cells, target, world_size)
+    return d
+
+def argmin(arr):
+    if len(arr) == 0:
+        return None
+    result = 0
+    for i in range(len(arr)):
+        if arr[i] < arr[result]:
+            result = i
+    return result
+
+def argmax(arr):
+    if len(arr) == 0:
+        return None
+    result = 0
+    for i in range(len(arr)):
+        if arr[i] > arr[result]:
+            result = i
+    return result

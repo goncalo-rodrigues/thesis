@@ -36,7 +36,7 @@ class PursuitState(object):
         apos_array = [(0,0)] * num_agents
         for i in range(num_preys):
             while True:
-                pos = (random.randint(0, world_size[0]), random.randint(0, world_size[1]))
+                pos = (random.randint(0, world_size[0]-1), random.randint(0, world_size[1]-1))
                 if pos not in filled_positions:
                     break
 
@@ -45,7 +45,7 @@ class PursuitState(object):
 
         for i in range(num_agents):
             while True:
-                pos = (random.randint(0, world_size[0]), random.randint(0, world_size[1]))
+                pos = (random.randint(0, world_size[0]-1), random.randint(0, world_size[1]-1))
                 if pos not in filled_positions:
                     break
 

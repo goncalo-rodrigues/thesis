@@ -1,53 +1,93 @@
 import random
 
-from pursuit.helper import distance, direction, directionx, directiony, move, cornered
+from pursuit.helper import distance, direction, move, cornered, astar_distance, argmin, argmax
+from pursuit.planning.astar import astar
 
 
 class TeammateAwareAgent(object):
     def __init__(self, id):
         self.id = id
+        self.last_prey_pos = None
+        self.prey_id = None
+        self.last_target = None
 
 
     def act(self, state):
-        w, h = state.world_size
         directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-
         my_pos = state.agent_positions[self.id]
-        closest_prey, d = None, None
-        for prey in state.prey_positions:
+        w, h = state.world_size
+        def choose_action():
+            target = self.last_target
+            # if already at destination, just follow the prey
+            if my_pos == target:
+                return direction(my_pos, self.last_prey_pos, w, h)
+
+            action, d = astar(my_pos, state.occupied_cells - {target}, target, (w, h))
+
+            if action is None:
+                return random.choice(directions)
+            else:
+                return action
+
+        if self.prey_id is not None and state.prey_positions[self.prey_id] == self.last_prey_pos:
+            return choose_action()
+
+        closest_prey, d, prey_id = None, None, 0
+        for i, prey in enumerate(state.prey_positions):
             distance_to_prey = sum(distance(my_pos, prey, w, h))
-            # already neighboring some prey
-            if distance_to_prey == 1:
-                return direction(my_pos, prey, w, h)
             # get the closest non cornered prey
             if d is None or (not cornered(state, prey, (w, h)) and distance_to_prey < d):
-                closest_prey, d = prey, distance_to_prey
+                closest_prey, d, prey_id = prey, distance_to_prey, i
+
+        self.prey_id = prey_id
+        self.last_prey_pos = state.prey_positions[self.prey_id]
+        # get the 4 agents closest to the prey
+        agents = sorted(state.agent_positions, key=lambda p: sum(distance(p, closest_prey, w, h)))
+        agents = agents[:4]
+
+        # sort the agents by the worst shortest distance to the prey
+        neighboring = [move(closest_prey, d, (w, h)) for d in directions]
+        distances = [[sum(distance(a, p, w, h)) for p in neighboring] for a in agents]
+        # distances = [(sorted((astar_distance(p, n, state.occupied_cells, (w, h)), i) for i, n in enumerate(neighboring)), j) for j, p in enumerate(agents)]
+
+        # distances[i][j] is the distance of agent i to cell j
+        # taken = set()
+        target = 0
+        for _ in range(len(agents)):
+            min_dists = [min(d) for d in distances]
+            min_inds = [argmin(d) for d in distances]
+            selected_agent = argmax(min_dists)
+            target = min_inds[selected_agent]
+            # print('%d selected for %d' % (selected_agent, target))
+            if selected_agent == self.id:
+                break
+            # remove the target from other agents
+            for d in distances:
+                d[target] = 2**31
+            # remove the agent itself
+            for i in range(len(distances[selected_agent])):
+                distances[selected_agent][i] = -1
 
 
-        # unoccupied neighboring cells, sorted by proximity to agent
-        targets = [move(closest_prey, d, (w, h)) for d in directions]
-        targets = filter(lambda x: x not in state.occupied_cells, targets)
-        targets = sorted(targets, key=lambda pos: sum(distance(my_pos, pos, w, h)))
+        #
+        # target = None
+        #
+        # for dists, agent_id in distances:
+        #     pos_id = None
+        #     for d, pos_id in dists:
+        #         if pos_id not in taken:
+        #             taken.add(pos_id)
+        #             break
+        #     if agent_id == self.id:
+        #         target = neighboring[pos_id]
+        #         break
 
-        if len(targets) == 0:
-            return random.choice(directions)
-        target = targets[0]
+        self.last_target = neighboring[target]
 
-        dx, dy = distance(my_pos, target, w, h)
-        move_x = (directionx(my_pos, target, w), 0)
-        move_y = (0, directiony(my_pos, target, h))
-        pos_x = move(my_pos, move_x, (w, h))
-        pos_y = move(my_pos, move_y, (w, h))
+        # print("%d, target: %s, distance: %d" % (self.id, self.last_target, d))
 
-        # moving horizontally since there's a free cell
-        if pos_x not in state.occupied_cells and (dx < dy or dx >= dy and pos_y in state.occupied_cells):
-            return move_x
-        # moving vertically since there's a free cell
-        elif pos_y not in state.occupied_cells and (dx >= dy or dx < dy and pos_x in state.occupied_cells):
-            return move_y
-        # moving randomly since there are no free cells towards prey
-        else:
-            return random.choice(directions)
+        return choose_action()
+
 
     def transition(self, state, actions, new_state, reward):
         pass
