@@ -45,6 +45,6 @@ def get_transition_function(num_agents, world_size):
             occupied_positions.add(agent_new_pos)
             apos_array[i] = agent_new_pos
 
-        return PursuitState(prey_positions=ppos_array, agent_positions=apos_array, world_size=world_size)
+        return PursuitState(prey_positions=tuple(ppos_array), agent_positions=tuple(apos_array), world_size=tuple(world_size))
 
     return transition
