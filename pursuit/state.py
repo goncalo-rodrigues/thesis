@@ -61,6 +61,23 @@ class PursuitState(object):
 
         return PursuitState(prey_positions=tuple(ppos_array), agent_positions=tuple(apos_array), world_size=world_size)
 
+    @staticmethod
+    def from_features(features, world_size):
+        features = features.reshape(-1, 2)
+        agent_positions = tuple(tuple(pos) for pos in features[:4])
+        prey_position = (tuple(features[4]), )
+        return PursuitState(agent_positions=agent_positions, prey_positions=prey_position, world_size=world_size)
+
+    @staticmethod
+    def from_features_relative_prey(features, world_size):
+        # TODO: More than 1 prey
+        agent_positions = features.reshape(-1, 2)
+        mid = (world_size[0] // 2, world_size[1] // 2)
+        for i, (x, y) in enumerate(agent_positions):
+            agent_positions[i] = (mid[0]+x, mid[1]+y)
+        agent_positions = tuple(tuple(pos) for pos in agent_positions)
+        return PursuitState(agent_positions=agent_positions, prey_positions=(mid, ), world_size=world_size)
+
     def __repr__(self):
         s = "Agents:\n" + '\n'.join(str(p) for p in self.agent_positions)
         s += "\n\n"
@@ -88,3 +105,6 @@ class PursuitState(object):
             dy = dy * directiony(prey, pos, h)
             relative_pos.append(np.array([dx, dy]))
         return np.concatenate(relative_pos)
+
+    def features_relative_teammate(self):
+        pass
