@@ -191,24 +191,24 @@ class EnvironmentModel(object):
         self.model = None
         self.metric = []
 
-    def init(self, num_state_features, num_agents):
+    def init(self, num_state_features, output_size, num_agents):
         self.x = np.zeros((0, num_state_features + 4 * num_agents))
-        self.y = np.zeros((0, num_state_features))
+        self.y = np.zeros((0, output_size))
 
         input = Input(shape=(num_state_features + 4 * num_agents,))
         dense = Dense(64, activation='selu')(input)
-        output = Dense(num_state_features, activation='linear')(dense)
+        output = Dense(output_size, activation='linear')(dense)
         model = Model(input, output)
         model.compile(optimizer='adam', loss='mae')
         self.model = model
 
     def train(self, state, actions, new_state):
         oldstatefeatures = state.features_relative_prey().reshape(1, -1)
-        newstatefeatures = new_state.features_relative_prey().reshape(1, -1)
+        diff_features = (new_state - state).reshape(1, -1)
         num_agents = len(actions)
 
         if self.x is None:
-            self.init(oldstatefeatures.shape[1], num_agents)
+            self.init(oldstatefeatures.shape[1], diff_features.shape[1], num_agents)
             self.world_size = state.world_size
 
         # 1-hot encode
@@ -218,12 +218,12 @@ class EnvironmentModel(object):
 
         # append to dataset
         self.x = np.append(self.x, np.concatenate((oldstatefeatures, actions_array), axis=1), axis=0)
-        self.y = np.append(self.y, newstatefeatures, axis=0)
+        self.y = np.append(self.y, diff_features, axis=0)
 
         # compute accuracy
-        predicted = self.predict(state, actions).features_relative_prey()
-        hits = [predicted[i] == newstatefeatures[0, i] for i in range(oldstatefeatures.shape[1])]
-        self.metric.append(sum(hits)/oldstatefeatures.shape[1])
+        predicted = self.predict(state, actions).features()
+        hits = [predicted[i] == new_state.features()[i] for i in range(len(predicted))]
+        self.metric.append(sum(hits)/diff_features.shape[1])
 
         # train
         self.model.fit(self.x, self.y, verbose=0)
@@ -237,8 +237,9 @@ class EnvironmentModel(object):
         actions_array[range(num_agents), actions] = 1
         actions_array = actions_array.reshape(1, -1)
 
-        predicted_y = self.model.predict(np.concatenate((oldstatefeatures, actions_array), axis=1))
-        return PursuitState.from_features_relative_prey(np.round(predicted_y).astype(np.int)[0], self.world_size)
+        predicted_diff = self.model.predict(np.concatenate((oldstatefeatures, actions_array), axis=1))
+        predicted_diff = np.round(predicted_diff).astype(np.int)[0]
+        return state+predicted_diff
 
 
 class BehaviorModel(object):
