@@ -109,7 +109,9 @@ class PursuitState(object):
     def __sub__(self, other):
         assert(isinstance(other, PursuitState))
         features = self.features()
-        return (features - other.features()) % ([self.world_size[0], self.world_size[1]] * (len(features)//2))
+        max_list = [self.world_size[0], self.world_size[1]] * (len(features)//2)
+        half_list = [value // 2 for value in max_list]
+        return ((features - other.features()) + half_list) % max_list - half_list
 
     def __add__(self, other):
         assert(isinstance(other, np.ndarray))

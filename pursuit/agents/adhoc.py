@@ -7,7 +7,7 @@ from keras import Model
 import matplotlib.pyplot as plt
 
 from mcts.mcts.backups import monte_carlo
-from mcts.mcts.default_policies import immediate_reward, random_terminal_roll_out, RandomKStepRollOut
+from mcts.mcts.default_policies import RandomKStepRollOut
 from mcts.mcts.graph import StateNode
 from mcts.mcts.mcts import MCTS
 from mcts.mcts.tree_policies import UCB1
@@ -239,6 +239,7 @@ class EnvironmentModel(object):
 
         predicted_diff = self.model.predict(np.concatenate((oldstatefeatures, actions_array), axis=1))
         predicted_diff = np.round(predicted_diff).astype(np.int)[0]
+
         return state+predicted_diff
 
 
