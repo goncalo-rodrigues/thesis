@@ -106,5 +106,17 @@ class PursuitState(object):
             relative_pos.append(np.array([dx, dy]))
         return np.concatenate(relative_pos)
 
-    def features_relative_teammate(self):
-        pass
+    def __sub__(self, other):
+        assert(isinstance(other, PursuitState))
+        features = self.features()
+        return (features - other.features()) % ([self.world_size[0], self.world_size[1]] * (len(features)//2))
+
+    def __add__(self, other):
+        assert(isinstance(other, np.ndarray))
+        features = self.features()
+        return PursuitState.from_features(
+            (features+other) % ([self.world_size[0], self.world_size[1]] * (len(features)//2)), self.world_size)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+    
