@@ -112,7 +112,7 @@ class AdhocAgent(GreedyAgent):
         # #print(self.behavior_model.evaluate(self.test[0], self.test[1], verbose=0))
 
         actions_idx = [ACTIONS.index(a) for a in actions]
-        self.b_model.train(state, actions_idx[:self.id] + actions_idx[self.id+1:])
+        self.b_model.train(state, [(i, action) for i, action in enumerate(actions_idx) if i != self.id])
         self.e_model.train(state, actions_idx, new_state)
         MEMO.clear()
 
@@ -250,51 +250,49 @@ class BehaviorModel(object):
         self.y = None
         self.model = None
         self.metric = []
+        self.ids = None
 
-    def init(self, num_state_features, num_agents):
+    def init(self, num_state_features, actions):
         self.x = np.zeros((0, num_state_features))
-        self.y = np.zeros((num_agents, 0, 4))
+        self.y = np.zeros((0, 4))
 
         input = Input(shape=(num_state_features,))
         dense = Dense(64, activation='selu')(input)
-        outputs = []
-        for i in range(num_agents):
-            outputs.append(Dense(4, activation='softmax')(dense))
+        output = Dense(4, activation='softmax')(dense)
 
-        model = Model(inputs=(input, ), outputs=outputs)
-        model.compile(optimizer='adam', loss=['categorical_crossentropy']*num_agents, metrics=['accuracy'])
+        model = Model(input, output)
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         self.model = model
+        self.ids = [x[0] for x in actions]
 
     def train(self, state, actions):
-        oldstatefeatures = state.features_relative_prey().reshape(1, -1)
-        num_agents = len(actions)
+        for agent_id, action in actions:
+            state_features = state.features_relative_agent(agent_id).reshape(1, -1)
+            if self.x is None:
+                self.init(state_features.shape[1], actions)
+            # 1-hot encode
+            actions_array = np.zeros((1,  4))
+            actions_array[0, action] = 1
 
-        if self.x is None:
-            self.init(oldstatefeatures.shape[1], num_agents)
-
-        # 1-hot encode
-        actions_array = np.zeros((num_agents, 1,  4))
-        actions_array[range(num_agents), 0, actions] = 1
-
-        # append to dataset
-        self.x = np.append(self.x, oldstatefeatures, axis=0)
-        self.y = np.append(self.y, actions_array, axis=1)
+            # append to dataset
+            self.x = np.append(self.x, state_features, axis=0)
+            self.y = np.append(self.y, actions_array, axis=0)
 
         # compute accuracy
-        predicted = self.predict(state)
-        hits = [predicted[i] == actions[i] for i in range(num_agents)]
-        self.metric.append(sum(hits)/num_agents)
+        predicted_y = self.predict(state)
+        hits = [predicted_y[i] == actions[i][1] for i in range(len(actions))]
+        self.metric.append(sum(hits)/len(actions))
 
         # train
-        self.model.fit(self.x, list(self.y), verbose=0)
-
+        self.model.fit(self.x, self.y, verbose=0)
 
 
     def predict(self, state):
-        oldstatefeatures = state.features_relative_prey().reshape(1, -1)
+        state_features = np.zeros((len(self.ids), len(self.x[1])))
+        for i, agent_id in enumerate(self.ids):
+            state_features[i] = state.features_relative_agent(agent_id).reshape(1, -1)
 
-        predicted_y = np.array(self.model.predict(oldstatefeatures))[:, 0, :]
+        predicted_y = np.array(self.model.predict(state_features))
 
         return np.argmax(predicted_y, axis=1)
-
 

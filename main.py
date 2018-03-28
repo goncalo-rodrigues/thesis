@@ -35,17 +35,18 @@ ax2 = ax1.twinx()
 for i in range(iters):
     world.initial_state = PursuitState.random_state(num_agents, world_size)
     timesteps, reward = world.run(0, 200)
-    if i >= 0 and i%1==0:
+    results.append(timesteps)
+    if i >= 10 and i%1==0:
         fig.clf()
         ax1 = fig.add_subplot(1, 1, 1)
         ax2 = ax1.twinx()
         # plt.plot([results[k:k+10].mean() for k in range(i-10)], label='Performance')
+        # results.extend([timesteps]*timesteps)
 
         n = len(adhoc.b_model.metric)
-        results.extend([timesteps]*timesteps)
-        ax1.plot([sum(adhoc.b_model.metric[k:k+10])/10 for k in range(n-10)], label='Behavior')
-        ax1.plot([sum(adhoc.e_model.metric[k:k+10])/10 for k in range(n-10)], label='Environment')
-        ax2.plot(results[10:], 'red', label='Timesteps')
+        # ax1.plot([sum(adhoc.b_model.metric[k:k+10])/10 for k in range(n-10)], label='Behavior')
+        # ax1.plot([sum(adhoc.e_model.metric[k:k+10])/10 for k in range(n-10)], label='Environment')
+        ax2.plot([sum(results[j:j+10])/10 for j in range(i-10)], 'red', label='Timesteps')
         fig.legend()
         plt.draw()
         plt.pause(0.02)
