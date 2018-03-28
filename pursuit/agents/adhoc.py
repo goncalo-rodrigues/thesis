@@ -174,6 +174,8 @@ class GameState(PursuitState):
             # predict new state
             new_state = self.env_model.predict(self, actions_idx)
             MEMO[(self, action)] = GameState(new_state, self.behavior_model, self.env_model, self.adhoc_id)
+            if (len(MEMO) % 1000 == 0):
+                print(len(MEMO))
         return MEMO[(self, action)]
 
     def is_terminal(self):
@@ -190,6 +192,7 @@ class EnvironmentModel(object):
         self.y = None
         self.model = None
         self.metric = []
+        self.cache = {}
 
     def init(self, num_state_features, output_size, num_agents):
         self.x = np.zeros((0, num_state_features + 4 * num_agents))
@@ -203,6 +206,7 @@ class EnvironmentModel(object):
         self.model = model
 
     def train(self, state, actions, new_state):
+        self.cache.clear()
         oldstatefeatures = state.features_relative_prey().reshape(1, -1)
         diff_features = (new_state - state).reshape(1, -1)
         num_agents = len(actions)
@@ -230,17 +234,20 @@ class EnvironmentModel(object):
 
     def predict(self, state, actions):
         oldstatefeatures = state.features_relative_prey().reshape(1, -1)
-        num_agents = len(actions)
+        dictkey = (str(oldstatefeatures), str(actions))
+        if dictkey not in self.cache:
+            num_agents = len(actions)
 
-        # 1-hot encode
-        actions_array = np.zeros((num_agents, 4))
-        actions_array[range(num_agents), actions] = 1
-        actions_array = actions_array.reshape(1, -1)
+            # 1-hot encode
+            actions_array = np.zeros((num_agents, 4))
+            actions_array[range(num_agents), actions] = 1
+            actions_array = actions_array.reshape(1, -1)
 
-        predicted_diff = self.model.predict(np.concatenate((oldstatefeatures, actions_array), axis=1))
-        predicted_diff = np.round(predicted_diff).astype(np.int)[0]
+            predicted_diff = self.model.predict(np.concatenate((oldstatefeatures, actions_array), axis=1))
+            predicted_diff = np.round(predicted_diff).astype(np.int)[0]
+            self.cache[dictkey] = state+predicted_diff
 
-        return state+predicted_diff
+        return self.cache[dictkey]
 
 
 class BehaviorModel(object):
@@ -251,6 +258,7 @@ class BehaviorModel(object):
         self.model = None
         self.metric = []
         self.ids = None
+        self.cache = {}
 
     def init(self, num_state_features, actions):
         self.x = np.zeros((0, num_state_features))
@@ -266,6 +274,7 @@ class BehaviorModel(object):
         self.ids = [x[0] for x in actions]
 
     def train(self, state, actions):
+        self.cache.clear()
         for agent_id, action in actions:
             state_features = state.features_relative_agent(agent_id).reshape(1, -1)
             if self.x is None:
@@ -288,11 +297,13 @@ class BehaviorModel(object):
 
 
     def predict(self, state):
-        state_features = np.zeros((len(self.ids), len(self.x[1])))
-        for i, agent_id in enumerate(self.ids):
-            state_features[i] = state.features_relative_agent(agent_id).reshape(1, -1)
+        if state not in self.cache:
+            state_features = np.zeros((len(self.ids), len(self.x[1])))
+            for i, agent_id in enumerate(self.ids):
+                state_features[i] = state.features_relative_agent(agent_id).reshape(1, -1)
 
-        predicted_y = np.array(self.model.predict(state_features))
+            predicted_y = np.array(self.model.predict(state_features))
+            self.cache[state] = np.argmax(predicted_y, axis=1)
 
-        return np.argmax(predicted_y, axis=1)
+        return self.cache[state]
 
