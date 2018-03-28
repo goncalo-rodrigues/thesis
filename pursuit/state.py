@@ -106,6 +106,24 @@ class PursuitState(object):
             relative_pos.append(np.array([dx, dy]))
         return np.concatenate(relative_pos)
 
+    def features_relative_agent(self, agent_id):
+        prey = self.prey_positions[0]
+        agent = self.agent_positions[agent_id]
+        relative_pos = []
+        w, h = self.world_size
+        for i, pos in enumerate(self.agent_positions):
+            if i == agent_id:
+                continue
+            dx, dy = distance(agent, pos, w, h)
+            dx = dx * directionx(agent, pos, w)
+            dy = dy * directiony(agent, pos, h)
+            relative_pos.append(np.array([dx, dy]))
+
+        relative_pos.sort(key=lambda dists: sum(abs(dists)))
+        dpreyx, dpreyy = distance(agent, prey, w, h)
+        relative_pos.append(np.array([dpreyx * directionx(agent, prey, w), dpreyy * directiony(agent, prey, h)]))
+        return np.concatenate(relative_pos)
+
     def __sub__(self, other):
         assert(isinstance(other, PursuitState))
         features = self.features()
