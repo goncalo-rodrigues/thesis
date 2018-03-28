@@ -168,11 +168,14 @@ class GameState(PursuitState):
         if (self, action) not in MEMO:
             # predict teammate's actions
             predicted_actions = self.behavior_model.predict(self)
+
             my_action = ACTIONS.index(action)
-            # build the joint action
-            actions_idx = np.concatenate((predicted_actions[:self.adhoc_id], [my_action], predicted_actions[self.adhoc_id:]))
-            # predict new state
-            new_state = self.env_model.predict(self, actions_idx)
+            one_hot_encoded = np.zeros(4)
+            one_hot_encoded[my_action] = 1
+
+            joint_action = np.insert(predicted_actions, self.adhoc_id, one_hot_encoded, axis=0)
+
+            new_state = self.env_model.predict(self, joint_action)
             MEMO[(self, action)] = GameState(new_state, self.behavior_model, self.env_model, self.adhoc_id)
         return MEMO[(self, action)]
 
@@ -221,21 +224,19 @@ class EnvironmentModel(object):
         self.y = np.append(self.y, diff_features, axis=0)
 
         # compute accuracy
-        predicted = self.predict(state, actions).features()
+        predicted = self.predict(state, actions_array).features()
         hits = [predicted[i] == new_state.features()[i] for i in range(len(predicted))]
         self.metric.append(sum(hits)/diff_features.shape[1])
 
         # train
         self.model.fit(self.x, self.y, verbose=0)
 
+
     def predict(self, state, actions):
         oldstatefeatures = state.features_relative_prey().reshape(1, -1)
         num_agents = len(actions)
 
-        # 1-hot encode
-        actions_array = np.zeros((num_agents, 4))
-        actions_array[range(num_agents), actions] = 1
-        actions_array = actions_array.reshape(1, -1)
+        actions_array = actions.reshape(1, -1)
 
         predicted_diff = self.model.predict(np.concatenate((oldstatefeatures, actions_array), axis=1))
         predicted_diff = np.round(predicted_diff).astype(np.int)[0]
@@ -280,7 +281,7 @@ class BehaviorModel(object):
         self.y = np.append(self.y, actions_array, axis=1)
 
         # compute accuracy
-        predicted = self.predict(state)
+        predicted = np.argmax(self.predict(state), axis=1)
         hits = [predicted[i] == actions[i] for i in range(num_agents)]
         self.metric.append(sum(hits)/num_agents)
 
@@ -294,6 +295,6 @@ class BehaviorModel(object):
 
         predicted_y = np.array(self.model.predict(oldstatefeatures))[:, 0, :]
 
-        return np.argmax(predicted_y, axis=1)
+        return predicted_y
 
 
