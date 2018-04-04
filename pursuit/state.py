@@ -31,7 +31,10 @@ class PursuitState(object):
 
 
     @staticmethod
-    def random_state(num_agents, world_size):
+    def random_state(num_agents, world_size, random_instance=None):
+        if random_instance is None:
+            random_instance = random._inst
+
         assert(num_agents >= 4)
         world_size = tuple(world_size)
         num_preys = num_agents // 4
@@ -43,7 +46,7 @@ class PursuitState(object):
         apos_array = [(0,0)] * num_agents
         for i in range(num_preys):
             while True:
-                pos = (random.randint(0, world_size[0]-1), random.randint(0, world_size[1]-1))
+                pos = (random_instance.randint(0, world_size[0]-1), random_instance.randint(0, world_size[1]-1))
                 if pos not in filled_positions:
                     break
 
@@ -52,7 +55,7 @@ class PursuitState(object):
 
         for i in range(num_agents):
             while True:
-                pos = (random.randint(0, world_size[0]-1), random.randint(0, world_size[1]-1))
+                pos = (random_instance.randint(0, world_size[0]-1), random_instance.randint(0, world_size[1]-1))
                 if pos not in filled_positions:
                     break
 

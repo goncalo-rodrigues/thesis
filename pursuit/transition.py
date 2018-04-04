@@ -4,7 +4,9 @@ from pursuit.helper import move
 from pursuit.state import PursuitState
 
 
-def get_transition_function(num_agents, world_size):
+def get_transition_function(num_agents, world_size, random_instance=None):
+    if random_instance is None:
+        random_instance = random._inst
 
     def transition(state, actions):
         assert(len(actions) == num_agents)
@@ -18,7 +20,7 @@ def get_transition_function(num_agents, world_size):
         directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (0, 0)]
         for i in range(num_preys):
             prey_pos = state.prey_positions[i]
-            prey_action = random.choice(directions)
+            prey_action = random_instance.choice(directions)
             prey_new_pos = move(prey_pos, prey_action, world_size)
 
             # if collision is detected, just go to the original position
@@ -30,7 +32,7 @@ def get_transition_function(num_agents, world_size):
             ppos_array[i] = prey_new_pos
 
         agents_indexs = list(range(num_agents))
-        random.shuffle(agents_indexs)
+        random_instance.shuffle(agents_indexs)
 
         for i in agents_indexs:
             agent_pos = state.agent_positions[i]
