@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+from multiprocessing import Process
 
 from common.world import World
 from pursuit.agents.adhoc import AdhocAgent
@@ -16,54 +17,75 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import spline
 from scipy.interpolate import interp1d
 
-random_instance = random.Random(100)
-random.seed(105)
-np.random.seed(100)
+def run(threadid):
+    mcts_c = 1.41
+    mcts_k = 10
+    mcts_n = 100
+    bsize = (64, 64)
+    esize = (64, 64)
 
-num_agents = 4
-world_size = [5, 5]
-adhoc = AdhocAgent(3)
-agents = [GreedyAgent(i) for i in range(num_agents-1)] + [adhoc]
-transition_f = get_transition_function(num_agents, world_size, random.Random(100))
-reward_f = get_reward_function(num_agents, world_size)
-agent_colors = [(random.randint(0, 255), random.randint(0, 50), random.randint(0, 255)) for _ in range(num_agents)]
-visualizer = PygameVisualizer(200, 200, agent_colors=agent_colors, agents=agents)
-visualizers = (visualizer, )
+    random_instance = random.Random(100+threadid)
+    random.seed(100+threadid)
+    np.random.seed(100+threadid)
 
-world = World(PursuitState.random_state(num_agents, world_size, random_instance), agents, transition_f, reward_f, visualizers)
-iters = 200
-results = []
-bmodelmetric = []
-emodelmetric = []
-emodelmetric_prey = []
-fig, ax1 = plt.subplots(clear=True)
-ax2 = ax1.twinx()
-try:
-    for i in range(iters):
-        world.initial_state = PursuitState.random_state(num_agents, world_size, random_instance)
-        timesteps, reward = world.run(0, 200)
-        results.append(timesteps)
-        bmodelmetric.append(sum(adhoc.b_model.metric[-timesteps:]) / timesteps)
-        emodelmetric.append(sum(adhoc.e_model.metric[-timesteps:]) / timesteps)
-        emodelmetric_prey.append(sum(adhoc.e_model.metric_prey[-timesteps:]) / timesteps)
+    num_agents = 4
+    world_size = [5, 5]
+    adhoc = AdhocAgent(3, mcts_c=mcts_c, mcts_k=mcts_k, mcts_n=mcts_n, behavior_model_size=bsize,
+                       environment_model_size=esize)
+    agents = [GreedyAgent(i) for i in range(num_agents - 1)] + [adhoc]
+    transition_f = get_transition_function(num_agents, world_size, random.Random(100))
+    reward_f = get_reward_function(num_agents, world_size)
+    agent_colors = [(random.randint(0, 255), random.randint(0, 50), random.randint(0, 255)) for _ in range(num_agents)]
+    # visualizer = PygameVisualizer(200, 200, agent_colors=agent_colors, agents=agents)
+    # visualizers = (visualizer,)
 
-        if i >= 1 and i%1==0:
-            fig.clf()
-            ax1 = fig.add_subplot(1, 1, 1)
-            ax2 = ax1.twinx()
+    world = World(PursuitState.random_state(num_agents, world_size, random_instance), agents, transition_f, reward_f)
+    iters = 200
+    results = []
+    bmodelmetric = []
+    emodelmetric = []
+    emodelmetric_prey = []
+    # fig, ax1 = plt.subplots(clear=True)
+    try:
+        for i in range(iters):
+            world.initial_state = PursuitState.random_state(num_agents, world_size, random_instance)
+            timesteps, reward = world.run(0, 200)
+            results.append(timesteps)
+            bmodelmetric.append(sum(adhoc.b_model.metric[-timesteps:]) / timesteps)
+            emodelmetric.append(sum(adhoc.e_model.metric[-timesteps:]) / timesteps)
+            emodelmetric_prey.append(sum(adhoc.e_model.metric_prey[-timesteps:]) / timesteps)
 
-            ax1.set_ylim([0.7, 1])
-            ax2.set_ylim([5, 30])
-            n = len(adhoc.b_model.metric)
-            ax1.plot([sum(bmodelmetric[k:k+10])/10 for k in range(i-10)], label='Behavior')
-            ax1.plot([sum(emodelmetric[k:k+10])/10 for k in range(i-10)], label='Environment')
-            ax1.plot([sum(emodelmetric_prey[k:k+10])/10 for k in range(i-10)], label='Environment (prey)')
+            # if i == iters-1:
+            #     fig.clf()
+            #     ax1 = fig.add_subplot(1, 1, 1)
+            #     ax2 = ax1.twinx()
+            #
+            #     ax1.set_ylim([0.7, 1])
+            #     ax2.set_ylim([5, 30])
+            #     n = len(adhoc.b_model.metric)
+            #     ax1.plot(bmodelmetric, label='Behavior')
+            #     ax1.plot(emodelmetric, label='Environment')
+            #     ax1.plot(emodelmetric_prey, label='Environment (prey)')
+            #
+            #     ax2.plot(results, 'red', label='Timesteps')
+            #     fig.legend()
+            #     plt.draw()
+            #     plt.pause(0.02)
+    finally:
+        print(sum(results) / len(results))
+        # plt.savefig('plot_{}'.format(threadid))
+        np.save('results_{}'.format(threadid), np.array(results))
+        np.save('eaccuracy_{}'.format(threadid), np.array(emodelmetric))
+        np.save('baccuracy_{}'.format(threadid), np.array(bmodelmetric))
+        np.save('eaccuracyprey_{}'.format(threadid), np.array(emodelmetric_prey))
 
-            ax2.plot([sum(results[k:k+10])/10 for k in range(i-10)], 'red', label='Timesteps')
-            fig.legend()
-            plt.draw()
-            plt.pause(0.02)
-finally:
-    print(sum(results)/len(results))
-    plt.savefig('plot_greedy')
+threads = []
+
+for j in range(30):
+    threads.append(Process(target=run, args=(j, )))
+    threads[-1].start()
+
+for j in range(30):
+    threads[j].join()
+
 

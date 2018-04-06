@@ -90,8 +90,7 @@ class GameState(PursuitState):
             # predict new state
             new_state = self.env_model.predict(self, actions_idx)
             MEMO[(self, action)] = GameState(new_state, self.behavior_model, self.env_model, self.adhoc_id)
-            if len(MEMO) % 1000 == 0:
-                print(len(MEMO))
+
         return MEMO[(self, action)]
 
     def is_terminal(self):
