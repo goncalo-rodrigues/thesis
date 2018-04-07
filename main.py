@@ -12,7 +12,7 @@ from pursuit.agents.teammate_aware import TeammateAwareAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
-from pursuit.visualizers.pygame_visualizer import PygameVisualizer
+# from pursuit.visualizers.pygame_visualizer import PygameVisualizer
 import matplotlib.pyplot as plt
 from scipy.interpolate import spline
 from scipy.interpolate import interp1d
@@ -74,10 +74,10 @@ def run(threadid):
     finally:
         print(sum(results) / len(results))
         # plt.savefig('plot_{}'.format(threadid))
-        np.save('results_{}'.format(threadid), np.array(results))
-        np.save('eaccuracy_{}'.format(threadid), np.array(emodelmetric))
-        np.save('baccuracy_{}'.format(threadid), np.array(bmodelmetric))
-        np.save('eaccuracyprey_{}'.format(threadid), np.array(emodelmetric_prey))
+        np.save('results_adhoc/results_{}'.format(threadid), np.array(results))
+        np.save('results_adhoc/eaccuracy_{}'.format(threadid), np.array(emodelmetric))
+        np.save('results_adhoc/baccuracy_{}'.format(threadid), np.array(bmodelmetric))
+        np.save('results_adhoc/eaccuracyprey_{}'.format(threadid), np.array(emodelmetric_prey))
 
 threads = []
 
