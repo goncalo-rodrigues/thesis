@@ -2,41 +2,66 @@ from pursuit.helper import neighbors, distance, direction
 from heapq import *
 
 
+class Node(object):
+    def __init__(self, position, parent, cost, heuristic):
+        self.position = position
+        self.parent = parent
+        self.cost = cost
+        self.heuristic = heuristic
+
+    def __lt__(self, other):
+        return self.cost + self.heuristic < other.cost + other.heuristic
+
+    def __hash__(self):
+        return self.position.__hash__()
+
+    def __eq__(self, other):
+        return self.position == other.position
+
+
 def astar(initial_pos, obstacles, target, world_size):
     if initial_pos == target:
         return (0, 0), 0
     w, h = world_size
     obstacles = obstacles - {target}
+
+    def heuristic(pos):
+        return sum(distance(initial_pos, pos, w, h))
+
     # each item in the queue contains (heuristic+cost, cost, position, parent)
-    queue = [(sum(distance(n, target, w, h))+1, 1, n, initial_pos)
+    initial_node = Node(initial_pos, None, 0, heuristic(initial_pos))
+    queue = [Node(n, initial_node, 1, sum(distance(n, target, w, h)))
              for n in neighbors(initial_pos, world_size) if n not in obstacles]
 
     heapify(queue)
-    # hashmap that maps each visited item to its parent
-    visited = {initial_pos: None}
+    visited = set()
+    visited.add(initial_pos)
+    current = initial_node
 
     while len(queue) > 0:
-        _, cost, pos, parent = heappop(queue)
-        if pos in visited:
-            continue
-        visited[pos] = parent
+        current = heappop(queue)
 
-        if pos == target:
+        if current.position in visited:
+            continue
+
+        visited.add(current.position)
+
+        if current.position == target:
             break
 
-        for n in neighbors(pos, world_size):
-            if n not in obstacles:
-                heappush(queue, (sum(distance(n, target, w, h))+cost+1, cost + 1, n, pos))
+        for position in neighbors(current.position, world_size):
+            if position not in obstacles:
+                new_node = Node(position, current, current.cost+1, heuristic(position))
+                heappush(queue, new_node)
 
     if target not in visited:
         return None, w*h
 
     i = 1
-    current = target
-    while visited[current] != initial_pos:
-        current = visited[current]
-        i+=1
+    while current.parent != initial_node:
+        current = current.parent
+        i += 1
 
-    return direction(initial_pos, current, h, w), i
+    return direction(initial_pos, current.position, h, w), i
 
 

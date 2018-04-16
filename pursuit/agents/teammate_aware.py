@@ -22,15 +22,15 @@ class TeammateAwareAgent(object):
             if my_pos == target:
                 return direction(my_pos, self.last_prey_pos, w, h)
 
-            action, d = astar(my_pos, state.occupied_cells - {target}, target, (w, h))
+            action, dist = astar(my_pos, state.occupied_cells - {target}, target, (w, h))
 
             if action is None:
                 return random.choice(directions)
             else:
                 return action
 
-        if self.prey_id is not None and state.prey_positions[self.prey_id] == self.last_prey_pos:
-            return choose_action()
+        # if self.prey_id is not None and state.prey_positions[self.prey_id] == self.last_prey_pos:
+        #     return choose_action()
 
         closest_prey, d, prey_id = None, None, 0
         for i, prey in enumerate(state.prey_positions):
@@ -42,8 +42,9 @@ class TeammateAwareAgent(object):
         self.prey_id = prey_id
         self.last_prey_pos = state.prey_positions[self.prey_id]
         # get the 4 agents closest to the prey
-        agents = sorted(state.agent_positions, key=lambda p: sum(distance(p, closest_prey, w, h)))
-        agents = agents[:4]
+        # agents = sorted(state.agent_positions, key=lambda p: sum(distance(p, closest_prey, w, h)))
+        # agents = agents[:4]
+        agents = state.agent_positions
 
         # sort the agents by the worst shortest distance to the prey
         neighboring = [move(closest_prey, d, (w, h)) for d in directions]
@@ -68,19 +69,6 @@ class TeammateAwareAgent(object):
             for i in range(len(distances[selected_agent])):
                 distances[selected_agent][i] = -1
 
-
-        #
-        # target = None
-        #
-        # for dists, agent_id in distances:
-        #     pos_id = None
-        #     for d, pos_id in dists:
-        #         if pos_id not in taken:
-        #             taken.add(pos_id)
-        #             break
-        #     if agent_id == self.id:
-        #         target = neighboring[pos_id]
-        #         break
 
         self.last_target = neighboring[target]
 

@@ -40,7 +40,7 @@ def run(threadid):
     # visualizers = (visualizer,)
 
     world = World(PursuitState.random_state(num_agents, world_size, random_instance), agents, transition_f, reward_f)
-    iters = 200
+    iters = 500
     results = []
     bmodelmetric = []
     emodelmetric = []
@@ -49,8 +49,9 @@ def run(threadid):
     try:
         for i in range(iters):
             world.initial_state = PursuitState.random_state(num_agents, world_size, random_instance)
-            timesteps, reward = world.run(0, 200)
+            timesteps, reward = world.run(0, 100)
             results.append(timesteps)
+            timesteps = max(1, timesteps)
             bmodelmetric.append(sum(adhoc.b_model.metric[-timesteps:]) / timesteps)
             emodelmetric.append(sum(adhoc.e_model.metric[-timesteps:]) / timesteps)
             emodelmetric_prey.append(sum(adhoc.e_model.metric_prey[-timesteps:]) / timesteps)
@@ -74,18 +75,28 @@ def run(threadid):
     finally:
         print(sum(results) / len(results))
         # plt.savefig('plot_{}'.format(threadid))
-        np.save('results_adhoc/results_{}'.format(threadid), np.array(results))
-        np.save('results_adhoc/eaccuracy_{}'.format(threadid), np.array(emodelmetric))
-        np.save('results_adhoc/baccuracy_{}'.format(threadid), np.array(bmodelmetric))
-        np.save('results_adhoc/eaccuracyprey_{}'.format(threadid), np.array(emodelmetric_prey))
+        np.save('results_adhoc_t500/results_{}'.format(threadid), np.array(results))
+        np.save('results_adhoc_t500/eaccuracy_{}'.format(threadid), np.array(emodelmetric))
+        np.save('results_adhoc_t500/baccuracy_{}'.format(threadid), np.array(bmodelmetric))
+        np.save('results_adhoc_t500/eaccuracyprey_{}'.format(threadid), np.array(emodelmetric_prey))
 
-threads = []
-
-for j in range(30):
-    threads.append(Process(target=run, args=(j, )))
-    threads[-1].start()
-
-for j in range(30):
-    threads[j].join()
-
-
+# threads = []
+#
+# for j in range(30):
+#     threads.append(Process(target=run, args=(j, )))
+#     threads[-1].start()
+#
+# for j in range(30):
+#     threads[j].join()
+world_size = [10,10]
+agents = [GreedyAgent(i) for i in range(4)]
+transition_f = get_transition_function(4, world_size, random.Random(100))
+reward_f = get_reward_function(4, world_size)
+world = World(PursuitState.random_state(4, world_size), agents, transition_f, reward_f)
+results = []
+for i in range(10000):
+    world.initial_state = PursuitState.random_state(4, world_size)
+    timesteps, reward = world.run(0, 2000)
+    results.append(timesteps)
+print(np.average(results))
+print(np.std(results))

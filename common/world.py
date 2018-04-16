@@ -24,7 +24,11 @@ class World(object):
         for agent in self.agents:
             actions.append(agent.act(self.current_state))
 
+        print([{(1, 0): "R", (-1, 0): "L", (0, -1): "U", (0, 1): "D"}[a] for a in actions])
+
         next_state = self.transition_f(self.current_state, actions)
+
+        print(next_state)
         reward = self.reward_f(self.current_state, actions, next_state)
 
         for agent in self.agents:

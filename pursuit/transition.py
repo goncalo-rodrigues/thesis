@@ -4,12 +4,22 @@ from pursuit.helper import move
 from pursuit.state import PursuitState
 
 
-def get_transition_function(num_agents, world_size, random_instance=None):
+def get_transition_function(num_agents, world_size, random_instance=None, prey_moves=None):
     if random_instance is None:
         random_instance = random._inst
 
     def transition(state, actions):
         assert(len(actions) == num_agents)
+        directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (0, 0)]
+
+        def choose_prey_move():
+            if not prey_moves:
+                return random_instance.choice(directions)
+            else:
+                result = prey_moves[0]
+                if len(prey_moves) > 1:
+                    prey_moves.pop(0)
+                return result
 
         occupied_positions = set(state.prey_positions) | set(state.agent_positions)
 
@@ -17,35 +27,30 @@ def get_transition_function(num_agents, world_size, random_instance=None):
 
         apos_array = [None] * num_agents
         ppos_array = [None] * num_preys
-        directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (0, 0)]
-        for i in range(num_preys):
-            prey_pos = state.prey_positions[i]
-            prey_action = random_instance.choice(directions)
-            prey_new_pos = move(prey_pos, prey_action, world_size)
-
-            # if collision is detected, just go to the original position
-            if prey_new_pos in occupied_positions:
-                prey_new_pos = prey_pos
-
-            occupied_positions.remove(prey_pos)
-            occupied_positions.add(prey_new_pos)
-            ppos_array[i] = prey_new_pos
-
-        agents_indexs = list(range(num_agents))
+        agents_indexs = [(i, True) for i in range(num_agents)] + \
+                        [(i, False) for i in range(num_preys)]
         random_instance.shuffle(agents_indexs)
 
-        for i in agents_indexs:
-            agent_pos = state.agent_positions[i]
-            agent_action = actions[i]
-            agent_new_pos = move(agent_pos, agent_action, world_size)
+        for i, is_agent in agents_indexs:
+            if is_agent:
+                position = state.agent_positions[i]
+                action = actions[i]
+            else:
+                position = state.prey_positions[i]
+                action = choose_prey_move()
+            new_position = move(position, action, world_size)
 
             # if collision is detected, just go to the original position
-            if agent_new_pos in occupied_positions:
-                agent_new_pos = agent_pos
+            if new_position in occupied_positions:
+                new_position = position
 
-            occupied_positions.remove(agent_pos)
-            occupied_positions.add(agent_new_pos)
-            apos_array[i] = agent_new_pos
+            occupied_positions.remove(position)
+            occupied_positions.add(new_position)
+
+            if is_agent:
+                apos_array[i] = new_position
+            else:
+                ppos_array[i] = new_position
 
         return PursuitState(prey_positions=tuple(ppos_array), agent_positions=tuple(apos_array), world_size=tuple(world_size))
 
