@@ -1,12 +1,13 @@
 import random
 
+from pursuit.agents.base_agent import Agent
 from pursuit.helper import distance, direction, move, cornered, astar_distance, argmin, argmax
 from pursuit.planning.astar import astar
 
 
-class TeammateAwareAgent(object):
+class TeammateAwareAgent(Agent):
     def __init__(self, id):
-        self.id = id
+        super().__init__(id)
         self.last_prey_pos = None
         self.prey_id = None
         self.last_target = None
@@ -75,7 +76,3 @@ class TeammateAwareAgent(object):
         # print("%d, target: %s, distance: %d" % (self.id, self.last_target, d))
 
         return choose_action()
-
-
-    def transition(self, state, actions, new_state, reward):
-        pass

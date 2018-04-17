@@ -3,12 +3,14 @@ from collections import defaultdict
 
 import numpy as np
 
+from pursuit.agents.base_agent import Agent
 
-class AdhocQLearning(object):
+
+class AdhocQLearning(Agent):
     actions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
     def __init__(self, id):
-        self.id = id
+        super().__init__(id)
         self.eps = 0.05
         self.qtable = defaultdict(lambda: np.zeros(4))
         self.lrate = 0.8

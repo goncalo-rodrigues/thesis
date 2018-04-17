@@ -1,11 +1,10 @@
 import numpy as np
 
+from pursuit.agents.base_agent import Agent
 from pursuit.helper import manhattan_distance, softmax, direction, move
 
 
-class ProbabilisticDestinations(object):
-    def __init__(self, id):
-        self.id = id
+class ProbabilisticDestinations(Agent):
 
     def act(self, state):
         actions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -42,11 +41,7 @@ class ProbabilisticDestinations(object):
         else:
             action_probs /= sum(action_probs)
 
-
         return actions[np.random.choice(np.arange(4), p=action_probs)]
-
-
-
 
     def compute_destinations(self, distance, state):
         w, h = state.world_size
@@ -78,7 +73,3 @@ class ProbabilisticDestinations(object):
                 all_actions.append(action)
 
         return all_dests, all_actions
-
-
-    def transition(self, state, actions, new_state, reward):
-        pass

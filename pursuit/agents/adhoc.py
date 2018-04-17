@@ -24,7 +24,6 @@ class AdhocAgent(GreedyAgent):
     def __init__(self, id, mcts_c=1.41, mcts_n=100, mcts_k=10, behavior_model_size=(64, ), environment_model_size=(64, )):
         super().__init__(id)
         self.id = id
-        self.test = self.get_test_dataset()
         self.first = True
         self.e_model = EnvironmentModel(behavior_model_size)
         self.b_model = BehaviorModel(environment_model_size)
@@ -48,26 +47,6 @@ class AdhocAgent(GreedyAgent):
         self.b_model.train(state, [(i, action) for i, action in enumerate(actions_idx) if i != self.id])
         self.e_model.train(state, actions_idx, new_state)
         MEMO.clear()
-
-    def get_test_dataset(self, filename='greedy_dataset.npy'):
-        raw = np.load(filename).item()
-        assert(isinstance(raw, dict))
-        x = [] # array with dims NxF, N = |dataset|, F = # features
-        y = None # list of NxA arrays, N = |dataset|, A = |actions|
-        for state, actions in raw.items():
-            if y is None:
-                y = [[] for _ in range(len(actions))]
-
-            x.append(state.features())
-            for i in range(len(actions)):
-                y[i].append((np.zeros(4)))
-                y[i][-1][ACTIONS.index(actions[i])] = 1
-
-        for i in range(len(y)):
-            y[i] = np.array(y[i])
-
-        x = np.array(x)
-        return x, y
 
 
 class GameState(PursuitState):

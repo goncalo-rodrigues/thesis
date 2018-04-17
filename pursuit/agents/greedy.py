@@ -1,12 +1,10 @@
 import random
 
+from pursuit.agents.base_agent import Agent
 from pursuit.helper import distance, direction, directionx, directiony, move, cornered
 
 
-class GreedyAgent(object):
-    def __init__(self, id):
-        self.id = id
-
+class GreedyAgent(Agent):
 
     def act(self, state):
         w, h = state.world_size
@@ -48,6 +46,3 @@ class GreedyAgent(object):
         # moving randomly since there are no free cells towards prey
         else:
             return random.choice(directions)
-
-    def transition(self, state, actions, new_state, reward):
-        pass
