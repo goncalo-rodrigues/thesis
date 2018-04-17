@@ -1,17 +1,16 @@
 import random
-from collections import defaultdict, deque
 
 import numpy as np
 from keras.layers import Dense, Input
 from keras import Model
-import matplotlib.pyplot as plt
 
 from mcts.mcts.backups import monte_carlo
 from mcts.mcts.default_policies import RandomKStepRollOut
 from mcts.mcts.graph import StateNode
 from mcts.mcts.mcts import MCTS
 from mcts.mcts.tree_policies import UCB1
-from pursuit.agents.greedy import GreedyAgent
+from pursuit.agents.base_agent import Agent
+from pursuit.agents.handcoded.greedy import GreedyAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
 
@@ -19,7 +18,7 @@ ACTIONS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 MEMO = {}
 
 
-class AdhocAgent(GreedyAgent):
+class AdhocAgent(Agent):
 
     def __init__(self, id, mcts_c=1.41, mcts_n=100, mcts_k=10, behavior_model_size=(64, ), environment_model_size=(64, )):
         super().__init__(id)

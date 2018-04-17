@@ -7,9 +7,8 @@ import numpy as np
 from multiprocessing import Process, Queue
 
 from common.world import World
-from pursuit.agents.adhoc import AdhocAgent
-from pursuit.agents.greedy import GreedyAgent
-from pursuit.agents.teammate_aware import TeammateAwareAgent
+from pursuit.agents.ad_hoc.adhoc import AdhocAgent
+from pursuit.agents.handcoded.teammate_aware import TeammateAwareAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
@@ -35,7 +34,7 @@ def run(q, threadid):
     try:
         for i in range(episodes):
             world.initial_state = PursuitState.random_state(num_agents, world_size, random_instance)
-            timesteps, reward = world.run(0, 100)
+            timesteps, reward = world.run(0, 200)
             results.append(timesteps)
             timesteps = max(1, timesteps)
             bmodelmetric.append(sum(adhoc.b_model.metric[-timesteps:]) / timesteps)
@@ -43,7 +42,6 @@ def run(q, threadid):
             emodelmetric_prey.append(sum(adhoc.e_model.metric_prey[-timesteps:]) / timesteps)
             q.put(1)
     finally:
-        print(sum(results) / len(results))
         np.save(str(results_folder / 'results_{}'.format(threadid)), np.array(results))
         np.save(str(results_folder / 'eaccuracy_{}'.format(threadid)), np.array(emodelmetric))
         np.save(str(results_folder / 'baccuracy_{}'.format(threadid)), np.array(bmodelmetric))
@@ -57,11 +55,11 @@ def progress_listener(q):
     progress_bar.close()
 
 threads = []
-n_threads = 3
+n_threads = 30
 q = Queue()
 
 base_path = Path('.')
-results_folder = base_path / 'results_adhoc_test'
+results_folder = base_path / 'results_adhoc_qlearning'
 if results_folder.exists():
     results_folder.rmdir() # will throw error if not empty
 os.makedirs(str(results_folder))
@@ -69,12 +67,12 @@ os.makedirs(str(results_folder))
 # these variables will be used by the function above
 mcts_c = 1.41
 mcts_k = 10
-mcts_n = 10
+mcts_n = 100
 bsize = (64,)
 esize = (64,)
 world_size = (5, 5)
 agent_type = TeammateAwareAgent
-episodes = 500
+episodes = 200
 
 progress_thread = Process(target=progress_listener, args=(q, ))
 progress_thread.start()

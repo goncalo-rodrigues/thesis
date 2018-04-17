@@ -2,8 +2,7 @@ import random
 
 import numpy as np
 from common.world import World
-from pursuit.agents.greedy import GreedyAgent
-from pursuit.agents.teammate_aware import TeammateAwareAgent
+from pursuit.agents.handcoded.teammate_aware import TeammateAwareAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
