@@ -8,6 +8,7 @@ from multiprocessing import Process, Queue
 
 from common.world import World
 from pursuit.agents.ad_hoc.adhoc import AdhocAgent
+from pursuit.agents.handcoded.greedy import GreedyAgent
 from pursuit.agents.handcoded.teammate_aware import TeammateAwareAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
@@ -55,11 +56,11 @@ def progress_listener(q):
     progress_bar.close()
 
 threads = []
-n_threads = 30
+n_threads = 1
 q = Queue()
 
 base_path = Path('.')
-results_folder = base_path / 'results_adhoc_qlearning'
+results_folder = base_path / 'results_adhoc_greedycorrected_1'
 if results_folder.exists():
     results_folder.rmdir() # will throw error if not empty
 os.makedirs(str(results_folder))
@@ -68,10 +69,10 @@ os.makedirs(str(results_folder))
 mcts_c = 1.41
 mcts_k = 10
 mcts_n = 100
-bsize = (64,)
-esize = (64,)
+bsize = (64, 64)
+esize = (64, 64)
 world_size = (5, 5)
-agent_type = TeammateAwareAgent
+agent_type = GreedyAgent
 episodes = 200
 
 progress_thread = Process(target=progress_listener, args=(q, ))

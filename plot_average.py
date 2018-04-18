@@ -3,15 +3,15 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-results_folder = Path('results_adhoc_qlearning')
+results_folder = Path('results_adhoc_greedycorrected_1')
 res_filename = str(results_folder / 'results_')
 eacc_filename = str(results_folder / 'eaccuracy_')
 eaccprey_filename = str(results_folder / 'eaccuracyprey_')
 bacc_filename = str(results_folder / 'baccuracy_')
 
-sample_size = 30
+sample_size = 1
 timesteps = 2**31
-only_show_timesteps = True
+only_show_timesteps = False
 
 for i in range(sample_size):
     timesteps = min(len(np.load(res_filename + str(i) + '.npy')), timesteps)
@@ -36,8 +36,8 @@ fig.clf()
 ax1 = fig.add_subplot(1, 1, 1)
 ax2 = ax1.twinx()
 
-ax1.set_ylim([0.7, 1])
-ax2.set_ylim([10, 70])
+ax1.set_ylim([0.5, 1])
+ax2.set_ylim([0, 70])
 if not only_show_timesteps:
     ax1.plot(np.average(bacc, axis=0), label='Behavior')
     ax1.plot(np.average(eacc, axis=0), label='Environment')

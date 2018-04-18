@@ -59,17 +59,14 @@ class GameState(PursuitState):
         self.reward_fn = get_reward_function(len(state.agent_positions), state.world_size)
 
     def perform(self, action):
-        if (self, action) not in MEMO:
-            # predict teammate's actions
-            predicted_actions = self.behavior_model.predict(self)
-            my_action = ACTIONS.index(action)
-            # build the joint action
-            actions_idx = np.concatenate((predicted_actions[:self.adhoc_id], [my_action], predicted_actions[self.adhoc_id:]))
-            # predict new state
-            new_state = self.env_model.predict(self, actions_idx)
-            MEMO[(self, action)] = GameState(new_state, self.behavior_model, self.env_model, self.adhoc_id)
-
-        return MEMO[(self, action)]
+        # predict teammate's actions
+        predicted_actions = self.behavior_model.predict(self)
+        my_action = ACTIONS.index(action)
+        # build the joint action
+        actions_idx = np.concatenate((predicted_actions[:self.adhoc_id], [my_action], predicted_actions[self.adhoc_id:]))
+        # predict new state
+        new_state = self.env_model.predict(self, actions_idx)
+        return GameState(new_state, self.behavior_model, self.env_model, self.adhoc_id)
 
     def is_terminal(self):
         return self.terminal
