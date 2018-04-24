@@ -13,10 +13,11 @@ from pursuit.agents.base_agent import Agent
 from pursuit.agents.handcoded.greedy import GreedyAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
+import _pickle as pickle
+from keras.models import clone_model, load_model
 
 ACTIONS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 MEMO = {}
-
 
 class AdhocAgent(Agent):
 
@@ -40,12 +41,37 @@ class AdhocAgent(Agent):
             self.first = False
             return random.choice(ACTIONS)
 
-    def transition(self, state, actions, new_state, reward):
+    def transition(self, state, actions, new_state, reward, fit=True, compute_metrics=True):
+        if fit is None:
+            fit = new_state.terminal
 
         actions_idx = [ACTIONS.index(a) for a in actions]
-        self.b_model.train(state, [(i, action) for i, action in enumerate(actions_idx) if i != self.id])
-        self.e_model.train(state, actions_idx, new_state)
-        MEMO.clear()
+        self.b_model.train(state, [(i, action) for i, action in enumerate(actions_idx) if i != self.id],
+                           fit=fit, compute_metrics=compute_metrics)
+        self.e_model.train(state, actions_idx, new_state, fit=fit, compute_metrics=compute_metrics)
+
+    def save(self, filename):
+        self.e_model.save(filename+'.emodel')
+        self.b_model.save(filename+'.bmodel')
+        d = dict(self.__dict__)
+        d.pop('e_model')
+        d.pop('b_model')
+        f = open(filename, 'wb')
+        pickle.dump(d, f)
+        f.close()
+
+
+    @staticmethod
+    def load(filename):
+        f = open(filename, 'rb')
+        attrs = pickle.load(f)
+        f.close()
+        obj = AdhocAgent(attrs['id'])
+        for key, value in attrs.items():
+            setattr(obj, key, value)
+        obj.e_model = EnvironmentModel.load(filename+'.emodel')
+        obj.b_model = BehaviorModel.load(filename+'.bmodel')
+        return obj
 
 
 class GameState(PursuitState):
@@ -75,6 +101,7 @@ class GameState(PursuitState):
         return self.reward_fn(parent, None, self)
 
 
+
 class EnvironmentModel(object):
     def __init__(self, model_size):
         self.world_size = None
@@ -85,6 +112,7 @@ class EnvironmentModel(object):
         self.metric = []
         self.metric_prey = []
         self.cache = {}
+        self.is_init = False
 
     def init(self, num_state_features, output_size, num_agents):
         self.x = np.zeros((0, num_state_features + 4 * num_agents))
@@ -98,13 +126,13 @@ class EnvironmentModel(object):
         model = Model(input, output)
         model.compile(optimizer='adam', loss='mae')
         self.model = model
+        self.is_init = True
 
-    def train(self, state, actions, new_state):
-        self.cache.clear()
+    def train(self, state, actions, new_state, fit=True, compute_metrics=True):
+
         oldstatefeatures = state.features_relative_prey().reshape(1, -1)
         diff_features = (new_state - state).reshape(1, -1)
         num_agents = len(actions)
-
         if self.x is None:
             self.init(oldstatefeatures.shape[1], diff_features.shape[1], num_agents)
             self.world_size = state.world_size
@@ -119,13 +147,16 @@ class EnvironmentModel(object):
         self.y = np.append(self.y, diff_features, axis=0)
 
         # compute accuracy
-        predicted = self.predict(state, actions).features()
-        hits = [predicted[i] == new_state.features()[i] for i in range(len(predicted))]
-        self.metric.append(sum(hits[:-2])/(diff_features.shape[1]-2))
-        self.metric_prey.append(sum(hits[-2:]) / 2)
+        if compute_metrics:
+            predicted = self.predict(state, actions).features()
+            hits = [predicted[i] == new_state.features()[i] for i in range(len(predicted))]
+            self.metric.append(sum(hits[:-2])/(diff_features.shape[1]-2))
+            self.metric_prey.append(sum(hits[-2:]) / 2)
 
         # train
-        self.model.fit(self.x, self.y, verbose=0)
+        if fit:
+            self.cache.clear()
+            self.model.fit(self.x, self.y, verbose=0)
 
     def predict(self, state, actions):
         oldstatefeatures = state.features_relative_prey().reshape(1, -1)
@@ -144,6 +175,26 @@ class EnvironmentModel(object):
 
         return self.cache[dictkey]
 
+    def save(self, filename):
+        if self.model is not None:
+            self.model.save(filename + '.model')
+        d = dict(self.__dict__)
+        d.pop('model')
+        f = open(filename, 'wb')
+        pickle.dump(d, f)
+        f.close()
+
+    @staticmethod
+    def load(filename):
+        model = load_model(filename + '.model')
+        f = open(filename, 'rb')
+        attrs = pickle.load(f)
+        f.close()
+        obj = EnvironmentModel(attrs['model_size'])
+        for key, value in attrs.items():
+            setattr(obj, key, value)
+        obj.model = model
+        return obj
 
 class BehaviorModel(object):
 
@@ -171,8 +222,8 @@ class BehaviorModel(object):
         self.model = model
         self.ids = [x[0] for x in actions]
 
-    def train(self, state, actions):
-        self.cache.clear()
+    def train(self, state, actions, fit=True, compute_metrics=True):
+
         for agent_id, action in actions:
             state_features = state.features_relative_agent(agent_id).reshape(1, -1)
             if self.x is None:
@@ -186,12 +237,15 @@ class BehaviorModel(object):
             self.y = np.append(self.y, actions_array, axis=0)
 
         # compute accuracy
-        predicted_y = self.predict(state)
-        hits = [predicted_y[i] == actions[i][1] for i in range(len(actions))]
-        self.metric.append(sum(hits)/len(actions))
+        if compute_metrics:
+            predicted_y = self.predict(state)
+            hits = [predicted_y[i] == actions[i][1] for i in range(len(actions))]
+            self.metric.append(sum(hits)/len(actions))
 
         # train
-        self.model.fit(self.x, self.y, verbose=0)
+        if fit:
+            self.cache.clear()
+            self.model.fit(self.x, self.y, verbose=0)
 
     def predict(self, state):
         if state not in self.cache:
@@ -204,3 +258,24 @@ class BehaviorModel(object):
 
         return self.cache[state]
 
+    def save(self, filename):
+        if self.model is not None:
+            self.model.save(filename + '.model')
+        d = dict(self.__dict__)
+        d.pop('model')
+        f = open(filename, 'wb')
+        pickle.dump(d, f)
+        f.close()
+
+
+    @staticmethod
+    def load(filename):
+        model = load_model(filename + '.model')
+        f = open(filename, 'rb')
+        attrs = pickle.load(f)
+        f.close()
+        obj = BehaviorModel(attrs['model_size'])
+        for key, value in attrs.items():
+            setattr(obj, key, value)
+        obj.model = model
+        return obj

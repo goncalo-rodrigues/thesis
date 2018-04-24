@@ -3,13 +3,13 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-results_folder = Path('results_adhoc_greedycorrected_1')
+results_folder = Path('results_adhoc20x20_after1000_30')
 res_filename = str(results_folder / 'results_')
 eacc_filename = str(results_folder / 'eaccuracy_')
 eaccprey_filename = str(results_folder / 'eaccuracyprey_')
 bacc_filename = str(results_folder / 'baccuracy_')
 
-sample_size = 1
+sample_size = 10
 timesteps = 2**31
 only_show_timesteps = False
 
