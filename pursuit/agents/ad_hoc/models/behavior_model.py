@@ -66,9 +66,10 @@ class BehaviorModel(BaseModel):
                 state_features[i] = state.features_relative_agent(agent_id).reshape(1, -1)
 
             predicted_y = np.array(self.model.predict(state_features))
-            self.cache[state] = np.argmax(predicted_y, axis=1)
+            self.cache[state] = predicted_y
 
-        return self.cache[state]
+        predicted_y = self.cache[state]
+        return np.array([np.random.choice(range(4), p=p) for p in predicted_y])
 
     # def save(self, filename):
     #     if self.model is not None:

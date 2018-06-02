@@ -28,18 +28,32 @@ class AdhocAgent(Agent):
         self.mcts_c = mcts_c
         self.mcts_n = mcts_n
         self.mcts_k = mcts_k
+        self.tree = None
 
     def act(self, state):
         if not self.first:
-            tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=monte_carlo)
             game_state = GameState(state, self.b_model, self.e_model, self.id)
-            best_action = tree(StateNode(None, game_state), n=self.mcts_n)
+            root = StateNode(None, game_state)
+            best_n = 0
+            # if self.tree is not None and state in \
+            #         [x for child in self.tree.children.values() for x in child.children.keys()]:
+            #
+            #     for child in self.tree.children.values():
+            #         for key_state, statenode in child.children.items():
+            #             if statenode.n > best_n:
+            #                 best_n = statenode.n
+            #                 root = statenode
+            #     root.parent = None
+
+            tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=monte_carlo)
+            best_action = tree(root, n=self.mcts_n-best_n)
+            self.tree = root
             return best_action
         else:
             self.first = False
             return random.choice(ACTIONS)
 
-    def transition(self, state, actions, new_state, reward, fit=True, compute_metrics=True):
+    def transition(self, state, actions, new_state, reward, fit=False, compute_metrics=True):
         if fit is None:
             fit = new_state.terminal
 
@@ -47,6 +61,7 @@ class AdhocAgent(Agent):
         self.b_model.train(state, [(i, action) for i, action in enumerate(actions_idx) if i != self.id],
                            fit=fit, compute_metrics=compute_metrics)
         self.e_model.train(state, actions_idx, new_state, fit=fit, compute_metrics=compute_metrics)
+
 
     def save(self, filename):
         self.e_model.save(filename+'.emodel')

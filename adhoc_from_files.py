@@ -28,6 +28,9 @@ def run(progress_q, results_q, threadid, adhoc_filename, episodes, results_folde
     #                    environment_model_size=esize)
     # load_run(dataset_folder / dataset_name, adhoc, episodes, fit=False, compute_metrics=False)
     adhoc = AdhocAgent.load(adhoc_filename)
+    adhoc.mcts_n = mcts_n
+    adhoc.mcts_k = mcts_k
+    adhoc.mcts_c = mcts_c
     agents = [agent_type(i) for i in range(num_agents - 1)] + [adhoc]
     transition_f = get_transition_function(num_agents, world_size, random.Random(100+threadid))
     reward_f = get_reward_function(num_agents, world_size)
@@ -43,7 +46,7 @@ def run(progress_q, results_q, threadid, adhoc_filename, episodes, results_folde
 
 
 def progress_listener(q):
-    progress_bar = tqdm.tqdm(total=n_threads*3)
+    progress_bar = tqdm.tqdm(total=n_threads*4)
     for _ in iter(q.get, None):
         progress_bar.update(1)
     progress_bar.close()
@@ -72,9 +75,9 @@ dataset_folder = base_path / 'adhoc_dataset'
 
 
 # these variables will be used by the function above
-mcts_c = 1.41
 mcts_k = 10
-mcts_n = 100
+mcts_c = mcts_k * 1
+mcts_n = 1000
 bsize = (64, 64)
 esize = (64, 64)
 agent_type = GreedyAgent
@@ -86,13 +89,13 @@ results_thread.start()
 threads = []
 pool = Pool(4, maxtasksperchild=1)
 
-world_size = (5, 5)
-results_folder = base_path / '{}x{}_greedy2'.format(*world_size)
+world_size = (10, 10)
+results_folder = base_path / '{}x{}_greedy_random_noretrain'.format(*world_size)
 if results_folder.exists():
     results_folder.rmdir()  # will throw error if not empty
 os.makedirs(str(results_folder))
-for episodes in (50, 200, 500):
-    adhoc_filename = str(dataset_folder / ('adhoc_' + str(episodes)))
+for episodes in (300, 400, 100, 200):
+    adhoc_filename = str(dataset_folder / ('{}x{}greedy_random_'.format(*world_size) + str(episodes)))
     for j in range(n_threads):
         threads.append(pool.apply_async(run, args=(progress_q, results_q, j, adhoc_filename, episodes, results_folder, world_size)))
 

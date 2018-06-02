@@ -20,9 +20,9 @@ np.random.seed(100)
 
 num_agents = 4
 world_size = (10, 10)
-agents = [TeammateAwareAgent(i) for i in range(num_agents)]
+agents = [GreedyAgent(i) for i in range(num_agents)]
 
-iters = 10000
+iters = 1000
 results = []
 
 for i in range(iters):
@@ -38,3 +38,4 @@ print(np.std(results))
 print(st.t.interval(0.9, len(results)-1, loc=np.mean(results), scale=st.sem(results)))
 plt.hist(results, bins=100)
 plt.show()
+

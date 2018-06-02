@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as st
 
-results_folder = Path('5x5_greedy2')
+results_folder = Path('10x10_greedy_random_noretrain')
 res_filename = str(results_folder / 'results_eps')
 eacc_filename = str(results_folder / 'eaccuracy_eps')
 eaccprey_filename = str(results_folder / 'eaccuracyprey_eps')
 bacc_filename = str(results_folder / 'baccuracy_eps')
 
-episodes_range = (1, 5, 20,50, 200, 500)
+episodes_range = (100, 300, 400)
 only_show_timesteps = False
 
 results = []
@@ -39,13 +39,14 @@ ax1 = fig.add_subplot(1, 1, 1)
 ax2 = ax1.twinx()
 
 ax1.set_ylim([0.5, 1])
-ax2.set_ylim([0, 50])
+ax2.set_ylim([0, 100])
 if not only_show_timesteps:
     ax1.plot(episodes_range, np.average(bacc, axis=1), marker='o', label='Behavior')
     ax1.plot(episodes_range, np.average(eacc, axis=1), marker='o', label='Environment')
     ax1.plot(episodes_range, np.average(eaccprey, axis=1), marker='o', label='Environment (prey)')
 
 ax2.plot(episodes_range, np.average(results, axis=1), 'red', marker='o', label='Timesteps')
+ax2.plot(episodes_range, [42]*len(episodes_range), label='4 greedy agents')
 # ax2.plot(range(timesteps), [52]*timesteps, 'pink', label='baseline')
 fig.legend()
 plt.show()
