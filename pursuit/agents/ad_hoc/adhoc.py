@@ -2,13 +2,14 @@ import random
 
 import numpy as np
 
-from mcts.mcts.backups import monte_carlo
+from mcts.mcts.backups import monte_carlo, Bellman
 from mcts.mcts.default_policies import RandomKStepRollOut
-from mcts.mcts.graph import StateNode
+from mcts.mcts.graph import StateNode, CACHE
 from mcts.mcts.mcts import MCTS
 from mcts.mcts.tree_policies import UCB1
 from pursuit.agents.ad_hoc.models.behavior_model import BehaviorModel
 from pursuit.agents.ad_hoc.models.environment_model import EnvironmentModel
+from pursuit.agents.ad_hoc.models.stochastic_environment_model import StochasticEnvironmentModel
 from pursuit.agents.base_agent import Agent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
@@ -32,6 +33,7 @@ class AdhocAgent(Agent):
 
     def act(self, state):
         if not self.first:
+            CACHE.clear()
             game_state = GameState(state, self.b_model, self.e_model, self.id)
             root = StateNode(None, game_state)
             best_n = 0
@@ -45,7 +47,7 @@ class AdhocAgent(Agent):
             #                 root = statenode
             #     root.parent = None
 
-            tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=monte_carlo)
+            tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=Bellman(0.9))
             best_action = tree(root, n=self.mcts_n-best_n)
             self.tree = root
             return best_action
@@ -53,7 +55,7 @@ class AdhocAgent(Agent):
             self.first = False
             return random.choice(ACTIONS)
 
-    def transition(self, state, actions, new_state, reward, fit=False, compute_metrics=True):
+    def transition(self, state, actions, new_state, reward, fit=True, compute_metrics=True):
         if fit is None:
             fit = new_state.terminal
 
@@ -67,8 +69,12 @@ class AdhocAgent(Agent):
         self.e_model.save(filename+'.emodel')
         self.b_model.save(filename+'.bmodel')
         d = dict(self.__dict__)
-        d.pop('e_model')
-        d.pop('b_model')
+        if 'e_model' in d:
+            d.pop('e_model')
+        if 'b_model' in d:
+            d.pop('b_model')
+        if 'tree' in d:
+            d.pop('tree')
         f = open(filename, 'wb')
         pickle.dump(d, f)
         f.close()
