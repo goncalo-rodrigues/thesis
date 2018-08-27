@@ -6,6 +6,7 @@ import numpy as np
 from common.world import World
 from pursuit.agents.ad_hoc.adhoc import AdhocAgent
 from pursuit.agents.handcoded.greedy import GreedyAgent
+from pursuit.agents.handcoded.teammate_aware import TeammateAwareAgent
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
@@ -16,13 +17,13 @@ os.makedirs(str(folder), exist_ok=True)
 random_instance = random.Random(100)
 random.seed(100)
 np.random.seed(100)
-world_size = (5, 5)
+world_size = (20, 20)
 mcts_k = 10
 mcts_n = 100
 mcts_c = mcts_k*1
 bsize = (64, 64)
 esize = (64, 64)
-agent_type = GreedyAgent
+agent_type = TeammateAwareAgent
 
 num_agents = 4
 adhoc = AdhocAgent(3, mcts_c=mcts_c, mcts_k=mcts_k, mcts_n=mcts_n, behavior_model_size=bsize,
@@ -39,10 +40,10 @@ for episodes in save_episodes:
     for current_episode in range(current_episode, episodes):
 
             world.initial_state = PursuitState.random_state(num_agents, world_size, random_instance)
-            timesteps, reward = world.run(0, 100)
+            timesteps, reward = world.run(0, 500)
             print(timesteps)
 
             print("acc average " + str(np.average(adhoc.e_model.metric)))
             print("acc prey average " + str(np.average(adhoc.e_model.metric_prey)))
 
-    adhoc.save(str(folder / ('5x5greedy_random_' + str(episodes))))
+    adhoc.save(str(folder / ('20x20ta_' + str(episodes))))

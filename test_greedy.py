@@ -3,6 +3,7 @@ import random
 import numpy as np
 from common.world import World
 from pursuit.agents.ad_hoc.adhoc_perfect_model import AdhocPerfectModel
+from pursuit.agents.ad_hoc.adhoc_qlearning import AdhocQLearning
 from pursuit.agents.handcoded.greedy import GreedyAgent
 from pursuit.agents.handcoded.teammate_aware import TeammateAwareAgent
 from pursuit.reward import get_reward_function
@@ -20,28 +21,34 @@ np.random.seed(100)
 # visualizers = (visualizer,)
 
 num_agents = 4
-for world_size in ((5, 5), (10, 10), (20, 20)):
-    for k in (20, 30, 50):
-        # agents = [GreedyAgent(i) for i in range(num_agents)]
-        agents = [GreedyAgent(i) for i in range(num_agents-1)] + [AdhocPerfectModel(3, mcts_n=1000, mcts_k=k,mcts_c=k*1.0)]
+world_size = (10,10)
+k = 10
 
-        iters = 100
-        results = []
+agents = [TeammateAwareAgent(i) for i in range(num_agents)]
+# agents = [GreedyAgent(i) for i in range(num_agents-1)] + [AdhocPerfectModel(3, mcts_n=1000, mcts_k=k,mcts_c=k*1.0)]
+# agents = [GreedyAgent(i) for i in range(num_agents-1)] + [AdhocQLearning(3)]
 
-        for i in range(iters):
-            transition_f = get_transition_function(num_agents, world_size, random.Random(100+i))
-            reward_f = get_reward_function(num_agents, world_size)
-            world = World(PursuitState.random_state(num_agents, world_size, random.Random(100+i)), agents, transition_f, reward_f)
-            timesteps, reward = world.run(0, 1000)
-            results.append(timesteps)
+iters = 1000
+results = []
 
+for i in range(iters):
+    transition_f = get_transition_function(num_agents, world_size, random.Random(100+i))
+    reward_f = get_reward_function(num_agents, world_size)
+    world = World(PursuitState.random_state(num_agents, world_size, random.Random(100+i)), agents, transition_f, reward_f)
+    timesteps, reward = world.run(0, 1000)
+    results.append(timesteps)
+    print(timesteps)
 
-        print(world_size)
-        print(k)
-        print(np.average(results))
-        print(np.std(results))
-        print(st.t.interval(0.9, len(results)-1, loc=np.mean(results), scale=st.sem(results)))
-        # plt.hist(results, bins=100)
-        # plt.show()
-        print("\n")
+plt.plot(results)
+plt.plot([np.average(results[:i]) for i in range(1, len(results))], label='average')
+plt.show()
+# print(results)
+# print(world_size)
+# print(k)
+print(np.average(results))
+# print(np.std(results))
+print(st.t.interval(0.9, len(results)-1, loc=np.mean(results), scale=st.sem(results))- np.mean(results))
+# # plt.hist(results, bins=100)
+# # plt.show()
+# print("\n")
 

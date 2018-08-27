@@ -9,12 +9,12 @@ from pursuit.agents.base_agent import Agent
 class AdhocQLearning(Agent):
     actions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
-    def __init__(self, id):
+    def __init__(self, id, lrate=0.8, discount=0.95, eps=0.05):
         super().__init__(id)
-        self.eps = 0.05
+        self.eps = eps
         self.qtable = defaultdict(lambda: np.zeros(4))
-        self.lrate = 0.8
-        self.discount = 0.95
+        self.lrate = lrate
+        self.discount = discount
         self.dataset = {}
         self.i = 0
 

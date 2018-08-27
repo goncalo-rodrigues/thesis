@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as st
 
-results_folder = Path('20x20_greedy_random_10rollouts')
+results_folder = Path('10x10_ta_k10')
 res_filename = str(results_folder / 'results_eps')
 eacc_filename = str(results_folder / 'eaccuracy_eps')
 eaccprey_filename = str(results_folder / 'eaccuracyprey_eps')
 bacc_filename = str(results_folder / 'baccuracy_eps')
 
-episodes_range = (300, )
+episodes_range = (1, 50, 200)
 only_show_timesteps = False
 
 results = []
@@ -46,11 +46,10 @@ if not only_show_timesteps:
     ax1.plot(episodes_range, np.average(eaccprey, axis=1), marker='o', label='Environment (prey)')
 
 ax2.plot(episodes_range, np.average(results, axis=1), 'red', marker='o', label='Timesteps')
-ax2.plot(episodes_range, [62]*len(episodes_range), label='4 greedy agents')
+ax2.plot(episodes_range, [7.6]*len(episodes_range), label='4 greedy agents')
 # ax2.plot(range(timesteps), [52]*timesteps, 'pink', label='baseline')
 fig.legend()
 plt.show()
 
 print(','.join(str(a) for a in np.average(results, axis=1)))
 print(','.join(str(a) for a in np.std(results, axis=1)))
-print([st.t.interval(0.9, len(r)-1, loc=np.mean(r), scale=st.sem(r)) for r in results])

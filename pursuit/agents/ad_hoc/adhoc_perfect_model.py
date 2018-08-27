@@ -5,6 +5,7 @@ from mcts.mcts.mcts import MCTS
 from mcts.mcts.tree_policies import UCB1
 from pursuit.agents.base_agent import Agent
 from pursuit.agents.handcoded.greedy import GreedyAgent
+from pursuit.planning.eligibilitytrace_mcts import ETMCTS
 from pursuit.reward import get_reward_function
 from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
@@ -19,7 +20,7 @@ class AdhocPerfectModel(Agent):
 
     def act(self, state):
         game_state = GameState(state, self.id, self.agent_type)
-        tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=monte_carlo)
+        tree = ETMCTS(confidence_weight=self.mcts_c, default_policy=RandomKStepRollOut(self.mcts_k))
         best_action = tree(StateNode(None, game_state), n=self.mcts_n)
         return best_action
 

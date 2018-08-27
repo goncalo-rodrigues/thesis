@@ -18,7 +18,7 @@ from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
 from utils import load_run
 
-for world_size in ((5,5),):
+for world_size in ((20, 20),):
     def run(progress_q, results_q, threadid, adhoc_filename, episodes, results_folder, world_size):
         random_instance = random.Random(100+threadid)
         random.seed(100+threadid)
@@ -46,8 +46,9 @@ for world_size in ((5,5),):
         results_q.put((str(results_folder / 'eaccuracyprey_eps{}'.format(episodes)), np.average(adhoc.e_model.metric_prey)))
 
 
+    episodes_list = (200, 500,)
     def progress_listener(q):
-        progress_bar = tqdm.tqdm(total=n_threads*1)
+        progress_bar = tqdm.tqdm(total=n_threads*len(episodes_list))
         for _ in iter(q.get, None):
             progress_bar.update(1)
         progress_bar.close()
@@ -77,11 +78,11 @@ for world_size in ((5,5),):
 
     # these variables will be used by the function above
     mcts_k = 10
-    mcts_c = mcts_k * 1
+    mcts_c = mcts_k * 1.0
     mcts_n = 1000
     bsize = (64, 64)
     esize = (64, 64)
-    agent_type = GreedyAgent
+    agent_type = TeammateAwareAgent
 
     progress_thread = Process(target=progress_listener, args=(progress_q, ))
     results_thread = Process(target=aggregator, args=(results_q, n_threads))
@@ -90,12 +91,12 @@ for world_size in ((5,5),):
     threads = []
     pool = Pool(4, maxtasksperchild=1)
 
-    results_folder = base_path / '{}x{}_greedy_random_trace'.format(*world_size)
+    results_folder = base_path / '{}x{}_ta_k10'.format(*world_size)
     if results_folder.exists():
         results_folder.rmdir()  # will throw error if not empty
     os.makedirs(str(results_folder))
-    for episodes in (300,):
-        adhoc_filename = str(dataset_folder / ('{}x{}greedy_random_'.format(*world_size) + str(episodes)))
+    for episodes in episodes_list:
+        adhoc_filename = str(dataset_folder / ('{}x{}ta_'.format(*world_size) + str(episodes)))
         for j in range(n_threads):
             threads.append(pool.apply_async(run, args=(progress_q, results_q, j, adhoc_filename, episodes, results_folder, world_size)))
 

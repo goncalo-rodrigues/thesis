@@ -4,7 +4,7 @@ import numpy as np
 
 from mcts.mcts.backups import monte_carlo, Bellman
 from mcts.mcts.default_policies import RandomKStepRollOut
-from mcts.mcts.graph import StateNode, CACHE
+from mcts.mcts.graph import StateNode
 from mcts.mcts.mcts import MCTS
 from mcts.mcts.tree_policies import UCB1
 from pursuit.agents.ad_hoc.models.behavior_model import BehaviorModel
@@ -33,7 +33,6 @@ class AdhocAgent(Agent):
 
     def act(self, state):
         if not self.first:
-            CACHE.clear()
             game_state = GameState(state, self.b_model, self.e_model, self.id)
             root = StateNode(None, game_state)
             best_n = 0
@@ -47,7 +46,7 @@ class AdhocAgent(Agent):
             #                 root = statenode
             #     root.parent = None
 
-            tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=Bellman(0.9))
+            tree = MCTS(tree_policy=UCB1(c=self.mcts_c), default_policy=RandomKStepRollOut(self.mcts_k), backup=monte_carlo)
             best_action = tree(root, n=self.mcts_n-best_n)
             self.tree = root
             return best_action
