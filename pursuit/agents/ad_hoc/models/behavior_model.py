@@ -35,7 +35,6 @@ class BehaviorModel(BaseModel):
         self.ids = [x[0] for x in actions]
 
     def train(self, state, actions, fit=True, compute_metrics=True):
-
         for agent_id, action in actions:
             state_features = state.features_relative_agent(agent_id).reshape(1, -1)
             if self.x is None:
@@ -57,11 +56,15 @@ class BehaviorModel(BaseModel):
         # train
         if fit:
             self.cache.clear()
-            self.model.fit(self.x, self.y, verbose=0)
+            self.model.fit(self.x, self.y, epochs=100, verbose=1)
 
     def predict(self, state):
+        if len(self.cache) >= 10*1000:
+            print('cleared cache')
+            self.cache.clear()
+
         if state not in self.cache:
-            state_features = np.zeros((len(self.ids), len(self.x[1])))
+            state_features = np.zeros((len(self.ids), len(self.x[0])))
             for i, agent_id in enumerate(self.ids):
                 state_features[i] = state.features_relative_agent(agent_id).reshape(1, -1)
 
@@ -69,6 +72,7 @@ class BehaviorModel(BaseModel):
             self.cache[state] = predicted_y
 
         predicted_y = self.cache[state]
+        # return np.argmax(predicted_y, axis=1)
         return np.array([np.random.choice(range(4), p=p) for p in predicted_y])
 
     # def save(self, filename):

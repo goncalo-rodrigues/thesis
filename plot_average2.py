@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as st
 
-results_folder = Path('10x10_ta_k10')
+results_folder = Path('10x10_ta_random_k10_determ')
 res_filename = str(results_folder / 'results_eps')
 eacc_filename = str(results_folder / 'eaccuracy_eps')
 eaccprey_filename = str(results_folder / 'eaccuracyprey_eps')
 bacc_filename = str(results_folder / 'baccuracy_eps')
 
-episodes_range = (1, 50, 200)
+episodes_range = (50, 200)
 only_show_timesteps = False
 
 results = []

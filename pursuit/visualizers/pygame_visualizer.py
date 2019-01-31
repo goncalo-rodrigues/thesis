@@ -72,16 +72,16 @@ class PygameVisualizer(object):
                                  pygame.Rect((x+padding/2)*xstep, (y+padding/2)*ystep,
                                              xstep-padding*xstep, ystep-padding*ystep))
 
-            if self.agents:
-                for i, agent in enumerate(self.agents):
-                    if hasattr(agent, 'last_target') and agent.last_target:
-                        x, y = agent.last_target
-                        color = self.agent_color if len(self.agent_color) == 1 else self.agent_color[i]
-
-                        pygame.draw.rect(self.screen, color,
-                                         pygame.Rect((x + padding / 2) * xstep, (y + padding / 2) * ystep,
-                                                     xstep - padding * xstep, ystep - padding * ystep), 3)
-
+            # if self.agents:
+            #     for i, agent in enumerate(self.agents):
+            #         if hasattr(agent, 'last_target') and agent.last_target:
+            #             x, y = agent.last_target
+            #             color = self.agent_color if len(self.agent_color) == 1 else self.agent_color[i]
+            #
+            #             pygame.draw.rect(self.screen, color,
+            #                              pygame.Rect((x + padding / 2) * xstep, (y + padding / 2) * ystep,
+            #                                          xstep - padding * xstep, ystep - padding * ystep), 3)
+            #
 
             pygame.display.flip()
 

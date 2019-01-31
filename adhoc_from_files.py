@@ -18,7 +18,7 @@ from pursuit.state import PursuitState
 from pursuit.transition import get_transition_function
 from utils import load_run
 
-for world_size in ((20, 20),):
+for world_size in ((10, 10),):
     def run(progress_q, results_q, threadid, adhoc_filename, episodes, results_folder, world_size):
         random_instance = random.Random(100+threadid)
         random.seed(100+threadid)
@@ -32,6 +32,9 @@ for world_size in ((20, 20),):
         adhoc.mcts_n = mcts_n
         adhoc.mcts_k = mcts_k
         adhoc.mcts_c = mcts_c
+        adhoc.fit = None
+        adhoc.eps = eps
+        adhoc.b_model.metric = []
         agents = [agent_type(i) for i in range(num_agents - 1)] + [adhoc]
         transition_f = get_transition_function(num_agents, world_size, random.Random(100+threadid))
         reward_f = get_reward_function(num_agents, world_size)
@@ -39,14 +42,15 @@ for world_size in ((20, 20),):
         world = World(PursuitState.random_state(num_agents, world_size, random_instance), agents, transition_f, reward_f)
         timesteps, reward = world.run(0, 300)
         progress_q.put(1)
-
+        print(np.average(adhoc.b_model.metric))
+        print(adhoc.b_model.metric)
         results_q.put((str(results_folder / 'results_eps{}'.format(episodes)), timesteps))
         results_q.put((str(results_folder / 'eaccuracy_eps{}'.format(episodes)), np.average(adhoc.e_model.metric)))
         results_q.put((str(results_folder / 'baccuracy_eps{}'.format(episodes)), np.average(adhoc.b_model.metric)))
         results_q.put((str(results_folder / 'eaccuracyprey_eps{}'.format(episodes)), np.average(adhoc.e_model.metric_prey)))
 
 
-    episodes_list = (200, 500,)
+    episodes_list = (50, 200, )
     def progress_listener(q):
         progress_bar = tqdm.tqdm(total=n_threads*len(episodes_list))
         for _ in iter(q.get, None):
@@ -82,6 +86,7 @@ for world_size in ((20, 20),):
     mcts_n = 1000
     bsize = (64, 64)
     esize = (64, 64)
+    eps = 0.0
     agent_type = TeammateAwareAgent
 
     progress_thread = Process(target=progress_listener, args=(progress_q, ))
@@ -89,14 +94,14 @@ for world_size in ((20, 20),):
     progress_thread.start()
     results_thread.start()
     threads = []
-    pool = Pool(4, maxtasksperchild=1)
+    pool = Pool(1, maxtasksperchild=1)
 
-    results_folder = base_path / '{}x{}_ta_k10'.format(*world_size)
+    results_folder = base_path / '{}x{}_ta_random_k10_test'.format(*world_size)
     if results_folder.exists():
         results_folder.rmdir()  # will throw error if not empty
     os.makedirs(str(results_folder))
     for episodes in episodes_list:
-        adhoc_filename = str(dataset_folder / ('{}x{}ta_'.format(*world_size) + str(episodes)))
+        adhoc_filename = str(dataset_folder / ('{}x{}ta_random_'.format(*world_size) + str(episodes)))
         for j in range(n_threads):
             threads.append(pool.apply_async(run, args=(progress_q, results_q, j, adhoc_filename, episodes, results_folder, world_size)))
 

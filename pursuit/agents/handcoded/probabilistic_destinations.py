@@ -1,5 +1,6 @@
 import numpy as np
 
+from pursuit.agents.ad_hoc.adhoc import ACTIONS
 from pursuit.agents.base_agent import Agent
 from pursuit.helper import manhattan_distance, softmax, direction, move
 
@@ -36,10 +37,13 @@ class ProbabilisticDestinations(Agent):
             for j, a in enumerate(dest_actions):
                 action_probs[actions.index(a)] += dist_to_me_probs[j] * distance_probs[i]
 
+        # if nothing available, move randomly to an unblocked cell
         if sum(action_probs) == 0:
-            action_probs[:] = .25
-        else:
-            action_probs /= sum(action_probs)
+            for a in ACTIONS:
+                if move(my_pos, a, (w,h)) not in state.occupied_cells:
+                    action_probs[ACTIONS.index(a)] = 1.0
+
+        action_probs /= sum(action_probs)
 
         return actions[np.random.choice(np.arange(4), p=action_probs)]
 

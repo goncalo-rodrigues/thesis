@@ -20,7 +20,7 @@ MEMO = {}
 
 class AdhocAgent(Agent):
 
-    def __init__(self, id, mcts_c=1.41, mcts_n=100, mcts_k=10, behavior_model_size=(64, ), environment_model_size=(64, )):
+    def __init__(self, id, mcts_c=1.41, mcts_n=100, mcts_k=10, behavior_model_size=(64, ), environment_model_size=(64, ), eps=0.0, fit=True):
         super().__init__(id)
         self.id = id
         self.first = True
@@ -29,10 +29,12 @@ class AdhocAgent(Agent):
         self.mcts_c = mcts_c
         self.mcts_n = mcts_n
         self.mcts_k = mcts_k
+        self.eps = eps
         self.tree = None
+        self.fit = fit
 
     def act(self, state):
-        if not self.first:
+        if not self.first and random.random() > self.eps:
             game_state = GameState(state, self.b_model, self.e_model, self.id)
             root = StateNode(None, game_state)
             best_n = 0
@@ -54,8 +56,9 @@ class AdhocAgent(Agent):
             self.first = False
             return random.choice(ACTIONS)
 
-    def transition(self, state, actions, new_state, reward, fit=True, compute_metrics=True):
-        if fit is None:
+    def transition(self, state, actions, new_state, reward, compute_metrics=True):
+        fit = self.fit
+        if self.fit is None:
             fit = new_state.terminal
 
         actions_idx = [ACTIONS.index(a) for a in actions]
